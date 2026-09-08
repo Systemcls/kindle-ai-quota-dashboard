@@ -1,0 +1,88 @@
+{
+  "mode": "live",
+  "updatedAt": "2026-09-09T00:46:27.253+08:00",
+  "weather": {
+    "ok": false,
+    "description": null,
+    "iconKey": null,
+    "tempC": null,
+    "feelsLikeC": null,
+    "humidity": null,
+    "windKph": null,
+    "windDir": null,
+    "place": null,
+    "observedAt": null,
+    "fetchedAt": "2026-09-09T00:46:27.253+08:00"
+  },
+  "quote": null,
+  "sources": {
+    "claude": {
+      "ok": false,
+      "label": "Claude",
+      "fetchedAt": "2026-09-09T00:46:22.731+08:00",
+      "stale": false,
+      "disabled": true,
+      "needsSetup": false,
+      "error": "未启用",
+      "windows": []
+    },
+    "codex": {
+      "ok": true,
+      "label": "Codex",
+      "fetchedAt": "2026-09-09T00:46:22.731+08:00",
+      "stale": false,
+      "disabled": false,
+      "needsSetup": false,
+      "error": null,
+      "windows": [
+        {
+          "name": "周",
+          "usedPct": 16,
+          "resetAt": "2026-09-15T11:32:14.000+08:00"
+        }
+      ]
+    },
+    "kimi": {
+      "ok": false,
+      "label": "Kimi",
+      "fetchedAt": "2026-09-09T00:46:22.775+08:00",
+      "stale": false,
+      "disabled": true,
+      "needsSetup": false,
+      "error": "未启用",
+      "windows": []
+    },
+    "deepseek": {
+      "ok": true,
+      "label": "DeepSeek",
+      "fetchedAt": "2026-09-09T00:46:22.775+08:00",
+      "stale": false,
+      "disabled": false,
+      "needsSetup": false,
+      "error": null,
+      "balance": 48.1,
+      "currency": "CNY"
+    },
+    "glm": {
+      "ok": true,
+      "label": "GLM",
+      "fetchedAt": "2026-09-09T00:46:22.831+08:00",
+      "stale": false,
+      "disabled": false,
+      "needsSetup": false,
+      "error": null,
+      "windows": [
+        {
+          "name": "MCP 月额度",
+          "usedPct": 0,
+          "resetAt": "2026-09-23T11:19:15.980+08:00"
+        },
+        {
+          "name": "5小时",
+          "usedPct": 25,
+          "resetAt": "2026-09-09T02:51:03.704+08:00"
+        }
+      ]
+    }
+  }
+}
