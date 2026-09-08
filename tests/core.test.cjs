@@ -20,7 +20,44 @@ const { parseGlmQuota, collectGlm } = require('../src/collectors/glm.cjs');
 const { parseCodexLimits } = require('../src/collectors/codex.cjs');
 const { collectDeepSeek } = require('../src/collectors/deepseek.cjs');
 const { loadLocalEnv } = require('../src/lib/local-env.cjs');
-const { publicSnapshot, prepareFiles, FILES } = require('../scripts/publish-pages.cjs');
+const { publicSnapshot, prepareFiles, publishFiles, FILES } = require('../scripts/publish-pages.cjs');
+
+test('Pages API creates and advances only the website branch without force', async () => {
+  for (const exists of [false, true]) {
+    const calls = [];
+    const api = async (route, method = 'GET', body) => {
+      calls.push({ route, method, body });
+      if (route.endsWith('/ref/heads/gh-pages')) {
+        if (exists) return { object: { sha: 'old-head' } };
+        const error = new Error('missing'); error.status = 404; throw error;
+      }
+      if (route.endsWith('/commits/old-head')) return { tree: { sha: 'old-tree' } };
+      if (route.endsWith('/trees/old-tree')) return { tree: FILES.map(name => ({ path: name, type: 'blob' })) };
+      if (route.endsWith('/trees') && method === 'POST') return { sha: 'new-tree' };
+      if (route.endsWith('/commits') && method === 'POST') return { sha: 'new-head' };
+      return {};
+    };
+    const files = Object.fromEntries(FILES.map(name => [name, 'fixture']));
+    assert.equal(await publishFiles(api, 'owner/dashboard', files), 'new-head');
+    const commit = calls.find(call => call.route.endsWith('/commits'));
+    assert.deepEqual(commit.body.parents, exists ? ['old-head'] : []);
+    const update = calls.at(-1);
+    assert.equal(update.method, exists ? 'PATCH' : 'POST');
+    assert.deepEqual(update.body, exists ? { sha: 'new-head', force: false } : { ref: 'refs/heads/gh-pages', sha: 'new-head' });
+  }
+});
+
+test('Pages API refuses a branch containing unrelated files', async () => {
+  let writes = 0;
+  const api = async (route, method = 'GET') => {
+    if (method !== 'GET') writes += 1;
+    if (route.endsWith('/ref/heads/gh-pages')) return { object: { sha: 'head' } };
+    if (route.endsWith('/commits/head')) return { tree: { sha: 'tree' } };
+    return { tree: [{ path: 'unrelated.txt', type: 'blob' }] };
+  };
+  await assert.rejects(publishFiles(api, 'owner/dashboard', Object.fromEntries(FILES.map(name => [name, '']))), /预期外文件/);
+  assert.equal(writes, 0);
+});
 
 test('Pages publication includes only display files and removes raw account errors', () => {
   const snapshot = demoSnapshot();

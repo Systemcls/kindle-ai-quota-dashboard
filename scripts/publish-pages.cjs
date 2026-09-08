@@ -6,9 +6,9 @@ const { spawnSync } = require('node:child_process');
 const { ROOT } = require('../src/lib/config.cjs');
 const { loadLocalEnv } = require('../src/lib/local-env.cjs');
 const { validateSnapshot } = require('../src/collect.cjs');
+const { createGitHubClient } = require('../src/lib/github.cjs');
 
 const FILES = ['index.html', 'dashboard-runtime.js', 'data.json', 'data.js', 'live-endpoint.js', '.nojekyll'];
-const checkout = path.join(ROOT, 'state', 'pages-publish');
 
 function git(args, cwd = ROOT) {
   const result = spawnSync('git', ['-c', `safe.directory=${cwd.replace(/\\/g, '/')}`, ...args], {
@@ -63,7 +63,33 @@ function prepareFiles(dist, secrets = []) {
   return files;
 }
 
-function main() {
+async function publishFiles(api, repo, files) {
+  if (Object.keys(files).some(name => !FILES.includes(name)) || FILES.some(name => !(name in files))) {
+    throw new Error('发布文件列表不匹配');
+  }
+  const base = `repos/${repo}/git`;
+  let head = null;
+  let oldTree = null;
+  try { head = (await api(`${base}/ref/heads/gh-pages`)).object.sha; }
+  catch (error) { if (error.status !== 404) throw error; }
+  if (head) {
+    oldTree = (await api(`${base}/commits/${head}`)).tree.sha;
+    const existing = await api(`${base}/trees/${oldTree}`);
+    if (existing.truncated || existing.tree.some(item => !FILES.includes(item.path) || item.type !== 'blob')) {
+      throw new Error('gh-pages 存在预期外文件，已停止自动发布');
+    }
+  }
+  const tree = await api(`${base}/trees`, 'POST', {
+    tree: Object.entries(files).map(([name, content]) => ({ path: name, mode: '100644', type: 'blob', content })),
+  });
+  if (tree.sha === oldTree) return head;
+  const commit = await api(`${base}/commits`, 'POST', { message: 'Update dashboard snapshot', tree: tree.sha, parents: head ? [head] : [] });
+  if (head) await api(`${base}/refs/heads/gh-pages`, 'PATCH', { sha: commit.sha, force: false });
+  else await api(`${base}/refs`, 'POST', { ref: 'refs/heads/gh-pages', sha: commit.sha });
+  return commit.sha;
+}
+
+async function main() {
   loadLocalEnv();
   fs.mkdirSync(path.join(ROOT, 'state'), { recursive: true });
   const lock = path.join(ROOT, 'state', 'pages-publish.lock');
@@ -85,33 +111,8 @@ function main() {
       .filter(([name]) => /(?:API_KEY|TOKEN|PASSWORD|SECRET)$/i.test(name))
       .map(([, value]) => value).filter(Boolean);
     const files = prepareFiles(path.join(ROOT, 'dist'), secrets);
-    fs.mkdirSync(checkout, { recursive: true });
-    if (!fs.existsSync(path.join(checkout, '.git'))) {
-      git(['init', '--quiet'], checkout);
-      git(['remote', 'add', 'origin', remote], checkout);
-    }
-    if (git(['remote', 'get-url', 'origin'], checkout) !== remote) throw new Error('发布目录的远程仓库不匹配');
-    const remoteHead = git(['ls-remote', '--heads', 'origin', 'gh-pages'], checkout);
-    if (remoteHead) {
-      git(['fetch', '--quiet', 'origin', 'gh-pages'], checkout);
-      const localHead = git(['branch', '--list', 'gh-pages'], checkout);
-      if (localHead) {
-        git(['checkout', 'gh-pages'], checkout);
-        git(['merge', '--ff-only', 'FETCH_HEAD'], checkout);
-      } else git(['checkout', '-b', 'gh-pages', 'FETCH_HEAD'], checkout);
-    } else if (!git(['branch', '--list', 'gh-pages'], checkout)) {
-      git(['checkout', '--orphan', 'gh-pages'], checkout);
-    }
-    const tracked = git(['ls-files'], checkout).split('\n').filter(Boolean);
-    if (tracked.some(file => !FILES.includes(file))) throw new Error('gh-pages 存在预期外文件，已停止自动发布');
-    for (const [name, content] of Object.entries(files)) fs.writeFileSync(path.join(checkout, name), content);
-    git(['add', '--', ...FILES], checkout);
-    if (git(['diff', '--cached', '--name-only'], checkout)) {
-      const userName = git(['config', 'user.name']);
-      const userEmail = git(['config', 'user.email']);
-      git(['-c', `user.name=${userName}`, '-c', `user.email=${userEmail}`, 'commit', '-m', 'Update dashboard snapshot'], checkout);
-    }
-    git(['push', 'origin', 'HEAD:refs/heads/gh-pages'], checkout);
+    const repo = remote.slice('https://github.com/'.length).replace(/\.git$/, '');
+    await publishFiles(createGitHubClient(), repo, files);
     console.log('已推送网页和额度快照，等待 GitHub Pages 更新。');
   } finally {
     if (locked) fs.unlinkSync(lock);
@@ -119,11 +120,11 @@ function main() {
 }
 
 if (require.main === module) mainWrapper();
-function mainWrapper() {
-  try { main(); } catch (error) {
+async function mainWrapper() {
+  try { await main(); } catch (error) {
     console.error(error.code === 'EEXIST' ? '已有发布任务运行，跳过本轮。' : error.message);
     process.exitCode = 1;
   }
 }
 
-module.exports = { publicSnapshot, prepareFiles, FILES };
+module.exports = { publicSnapshot, prepareFiles, publishFiles, FILES };
