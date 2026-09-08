@@ -1,6 +1,6 @@
 {
   "mode": "live",
-  "updatedAt": "2026-09-09T01:00:27.613+08:00",
+  "updatedAt": "2026-09-09T01:08:36.251+08:00",
   "weather": {
     "ok": false,
     "description": null,
@@ -12,14 +12,14 @@
     "windDir": null,
     "place": null,
     "observedAt": null,
-    "fetchedAt": "2026-09-09T01:00:27.613+08:00"
+    "fetchedAt": "2026-09-09T01:08:36.251+08:00"
   },
   "quote": null,
   "sources": {
     "claude": {
       "ok": false,
       "label": "Claude",
-      "fetchedAt": "2026-09-09T01:00:25.566+08:00",
+      "fetchedAt": "2026-09-09T01:08:33.976+08:00",
       "stale": false,
       "disabled": true,
       "needsSetup": false,
@@ -29,7 +29,7 @@
     "codex": {
       "ok": true,
       "label": "Codex",
-      "fetchedAt": "2026-09-09T01:00:25.566+08:00",
+      "fetchedAt": "2026-09-09T01:08:33.976+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
@@ -37,7 +37,7 @@
       "windows": [
         {
           "name": "周",
-          "usedPct": 17,
+          "usedPct": 18,
           "resetAt": "2026-09-15T11:32:14.000+08:00"
         }
       ]
@@ -45,7 +45,7 @@
     "kimi": {
       "ok": false,
       "label": "Kimi",
-      "fetchedAt": "2026-09-09T01:00:25.608+08:00",
+      "fetchedAt": "2026-09-09T01:08:34.017+08:00",
       "stale": false,
       "disabled": true,
       "needsSetup": false,
@@ -55,7 +55,7 @@
     "deepseek": {
       "ok": true,
       "label": "DeepSeek",
-      "fetchedAt": "2026-09-09T01:00:25.608+08:00",
+      "fetchedAt": "2026-09-09T01:08:34.018+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
@@ -66,7 +66,7 @@
     "glm": {
       "ok": true,
       "label": "GLM",
-      "fetchedAt": "2026-09-09T01:00:25.664+08:00",
+      "fetchedAt": "2026-09-09T01:08:34.074+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
@@ -79,7 +79,7 @@
         },
         {
           "name": "5小时",
-          "usedPct": 25,
+          "usedPct": 26,
           "resetAt": "2026-09-09T02:51:03.704+08:00"
         }
       ]
