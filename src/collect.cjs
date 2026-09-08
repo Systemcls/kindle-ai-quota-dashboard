@@ -7,6 +7,7 @@ const { collectCodex } = require('./collectors/codex.cjs');
 const { collectDeepSeek } = require('./collectors/deepseek.cjs');
 const { collectKimi } = require('./collectors/kimi.cjs');
 const { collectGlm } = require('./collectors/glm.cjs');
+const { collectWeather } = require('./collectors/weather.cjs');
 const { loadLocalEnv } = require('./lib/local-env.cjs');
 const { ROOT, loadConfig } = require('./lib/config.cjs');
 const {
@@ -160,17 +161,20 @@ function demoSnapshot() {
 
 async function realSnapshot(config) {
   const providers = config.providers || {};
-  const [claude, codex, kimi, deepseek, glm] = await Promise.all([
+  const [claude, codex, kimi, deepseek, glm, weather] = await Promise.all([
     collectClaude(providers.claude),
     collectCodex(providers.codex),
     collectKimi(providers.kimi),
     collectDeepSeek(providers.deepseek),
     collectGlm(providers.glm),
+    config.weather && config.weather.enabled
+      ? collectWeather(config.weather, path.join(config.outputDir, 'weather-cache.json'))
+      : readWeather(config.weatherFile),
   ]);
   return {
     mode: 'live',
     updatedAt: isoBeijing(),
-    weather: readWeather(config.weatherFile),
+    weather,
     quote: readQuote(config.quoteFile),
     sources: { claude, codex, kimi, deepseek, glm },
   };
@@ -228,6 +232,7 @@ function writeSnapshot(snapshot, outputDir, keepLocalHistory) {
   const javascript = `window.DASH_DATA = ${JSON.stringify(snapshot, null, 2)};\n`;
   writeAtomic(path.join(outputDir, 'data.json'), json);
   writeAtomic(path.join(outputDir, 'data.js'), javascript);
+  writeAtomic(path.join(outputDir, 'weather.js'), `window.DASH_WEATHER = ${JSON.stringify(snapshot.weather)};\n`);
   if (keepLocalHistory) {
     const historyDir = path.join(outputDir, 'history');
     fs.mkdirSync(historyDir, { recursive: true });

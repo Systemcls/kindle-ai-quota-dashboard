@@ -8,7 +8,7 @@ const { loadLocalEnv } = require('../src/lib/local-env.cjs');
 const { validateSnapshot } = require('../src/collect.cjs');
 const { createGitHubClient } = require('../src/lib/github.cjs');
 
-const FILES = ['index.html', 'dashboard-runtime.js', 'data.json', 'data.js', 'live-endpoint.js', '.nojekyll'];
+const FILES = ['index.html', 'dashboard-runtime.js', 'data.json', 'data.js', 'weather.js', 'live-endpoint.js', '.nojekyll'];
 
 function git(args, cwd = ROOT) {
   const result = spawnSync('git', ['-c', `safe.directory=${cwd.replace(/\\/g, '/')}`, ...args], {
@@ -54,6 +54,7 @@ function prepareFiles(dist, secrets = []) {
     'dashboard-runtime.js': fs.readFileSync(path.join(dist, 'dashboard-runtime.js'), 'utf8'),
     'data.json': json + '\n',
     'data.js': 'window.DASH_DATA = ' + json + ';\n',
+    'weather.js': `window.DASH_WEATHER = ${JSON.stringify(data.weather)};\n`,
     'live-endpoint.js': 'window.DASH_LIVE_ENDPOINT = "data.js";\n',
     '.nojekyll': '',
   };

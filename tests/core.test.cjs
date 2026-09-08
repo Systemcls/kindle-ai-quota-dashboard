@@ -20,6 +20,8 @@ const { parseGlmQuota, collectGlm } = require('../src/collectors/glm.cjs');
 const { parseCodexLimits } = require('../src/collectors/codex.cjs');
 const { collectDeepSeek } = require('../src/collectors/deepseek.cjs');
 const { loadLocalEnv } = require('../src/lib/local-env.cjs');
+const { parseWeather, collectWeather } = require('../src/collectors/weather.cjs');
+const { publishWeatherAssets } = require('../scripts/publish-weather.cjs');
 const { publicSnapshot, prepareFiles, publishFiles, FILES } = require('../scripts/publish-pages.cjs');
 
 test('Pages API creates and advances only the website branch without force', async () => {
@@ -93,6 +95,75 @@ test('demo snapshot passes the public schema', () => {
   assert.equal(snapshot.sources.deepseek.balance, 12.34);
 });
 
+test('weather preserves valid zero values, Beijing time and missing optional measurements', () => {
+  const weather = parseWeather({ current: { time: 1788910200, temperature_2m: 0, relative_humidity_2m: 0, weather_code: 3, wind_direction_10m: 0 } }, '北京市海淀区');
+  assert.equal(weather.tempC, 0);
+  assert.equal(weather.description, '阴');
+  assert.equal(weather.windDir, '北风');
+  assert.equal(weather.humidity, 0);
+  assert.equal(weather.feelsLikeC, null);
+  assert.equal(weather.observedAt, '2026-09-09T07:30:00.000+08:00');
+  assert.throws(() => parseWeather({ current: { time: 1788910200, temperature_2m: null } }, '海淀'), /不完整/);
+  const snapshot = demoSnapshot(); snapshot.mode = 'live';
+  snapshot.weather = { ok: false, fetchedAt: '2026-01-01T08:00:00+08:00' };
+  const screen = runBrowserRuntime(snapshot, new Map(), weather);
+  assert.equal(screen.nodes.get('#weatherTemp').textContent, '0°');
+  assert.match(screen.nodes.get('#weatherDetail').textContent, /北京市海淀区/);
+  assert.doesNotMatch(screen.nodes.get('#weatherDetail').textContent, /体感/);
+});
+
+test('weather caches requests for 15 minutes and expires stale weather after two hours', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kindle-weather-test-'));
+  const oldFetch = global.fetch;
+  const file = path.join(dir, 'weather.json');
+  const config = { place: '海淀', latitude: 39.99064, longitude: 116.28868 };
+  let calls = 0;
+  try {
+    global.fetch = async url => {
+      calls += 1;
+      assert.match(url, /latitude=39.99064/);
+      return { ok: true, text: async () => JSON.stringify({ current: { time: 1788910200, temperature_2m: 17.5, weather_code: 3 } }) };
+    };
+    assert.equal((await collectWeather(config, file)).ok, true);
+    assert.equal((await collectWeather(config, file)).ok, true);
+    assert.equal(calls, 1);
+    const cached = JSON.parse(fs.readFileSync(file, 'utf8'));
+    cached.weather.fetchedAt = new Date(Date.now() - 16 * 60000).toISOString();
+    fs.writeFileSync(file, JSON.stringify(cached));
+    global.fetch = async () => { throw new Error('offline'); };
+    assert.equal((await collectWeather(config, file)).stale, true);
+    cached.weather.fetchedAt = new Date(Date.now() - 3 * 3600000).toISOString();
+    fs.writeFileSync(file, JSON.stringify(cached));
+    assert.equal((await collectWeather(config, file)).ok, false);
+    assert.equal((await collectWeather({ ...config, place: '另一个地区' }, file)).ok, false);
+  } finally {
+    global.fetch = oldFetch;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('weather-only publication keeps the quota blobs unchanged and rejects quota edits', async () => {
+  const files = { 'index.html': 'page', 'dashboard-runtime.js': 'runtime', 'weather.js': 'weather' };
+  for (const altered of [false, true]) {
+    const calls = [];
+    const api = async (route, method = 'GET', body) => {
+      calls.push({ route, method, body });
+      if (route.endsWith('/ref/heads/gh-pages')) return { object: { sha: 'head' } };
+      if (route.endsWith('/commits/head')) return { tree: { sha: 'old-tree' } };
+      if (route.endsWith('/trees') && method === 'POST') return { sha: 'new-tree' };
+      if (route.endsWith('/commits')) return { sha: 'new-commit' };
+      if (route.endsWith('/refs/heads/gh-pages')) return {};
+      return { tree: ['data.json', 'data.js'].map(name => ({ path: name, sha: altered && route.endsWith('/new-tree') ? 'changed' : name })) };
+    };
+    if (altered) await assert.rejects(publishWeatherAssets(api, 'owner/repo', files), /额度文件发生变化/);
+    else await publishWeatherAssets(api, 'owner/repo', files);
+    const tree = calls.find(call => call.method === 'POST' && call.route.endsWith('/trees'));
+    assert.equal(tree.body.base_tree, 'old-tree');
+    assert.deepEqual(tree.body.tree.map(item => item.path), Object.keys(files));
+    assert.equal(calls.some(call => call.method === 'PATCH'), !altered);
+  }
+});
+
 test('last known good data is preserved only for enabled failing providers', () => {
   const previous = demoSnapshot();
   const next = demoSnapshot();
@@ -157,7 +228,7 @@ test('browser runtime is valid JavaScript', () => {
   }
 });
 
-function runBrowserRuntime(snapshot, storage) {
+function runBrowserRuntime(snapshot, storage, weather) {
   const nodes = new Map();
   function node() {
     const children = new Map();
@@ -197,7 +268,7 @@ function runBrowserRuntime(snapshot, storage) {
     setItem: (key, value) => storage.set(key, value),
     removeItem: (key) => storage.delete(key),
   };
-  const window = { DASH_DATA: snapshot, localStorage };
+  const window = { DASH_DATA: snapshot, DASH_WEATHER: weather, localStorage };
   const source = fs.readFileSync(path.join(ROOT, 'web', 'dashboard-runtime.js'), 'utf8');
   vm.runInNewContext(source, {
     window,

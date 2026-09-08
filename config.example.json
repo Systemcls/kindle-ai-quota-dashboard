@@ -3,6 +3,12 @@
   "keepLocalHistory": false,
   "quoteFile": "config/quote.json",
   "weatherFile": "",
+  "weather": {
+    "enabled": false,
+    "place": "北京市海淀区",
+    "latitude": 39.99064,
+    "longitude": 116.28868
+  },
   "providers": {
     "deepseek": {
       "enabled": true,

@@ -11,6 +11,8 @@
   "scripts": {
     "demo": "node src/collect.cjs --demo",
     "collect": "node src/collect.cjs",
+    "weather": "node scripts/update-weather.cjs",
+    "publish:weather": "node scripts/publish-weather.cjs",
     "refresh": "node scripts/refresh.cjs",
     "watch": "node scripts/refresh.cjs --watch",
     "publish:pages": "node scripts/publish-pages.cjs --refresh",

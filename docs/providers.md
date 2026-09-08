@@ -62,7 +62,15 @@ npm run serve
 
 ## 发布到 GitHub Pages
 
-电脑先完成 GitHub 登录。`origin` 应指向自己的 Fork。运行 `npm run publish:pages` 会采集最新额度，在本地生成网页，并把六个必要的网页文件推送到 `gh-pages` 分支。代码分支和本地配置保持独立；发布端重新生成公开快照，去掉原始错误信息和额外账户字段，并检查是否包含本地密钥。
+电脑先完成 GitHub 登录。`origin` 应指向自己的 Fork。运行 `npm run publish:pages` 会采集最新额度，在本地生成网页，并把必要的网页文件推送到 `gh-pages` 分支。代码分支和本地配置保持独立；发布端重新生成公开快照，去掉原始错误信息和额外账户字段，并检查是否包含本地密钥。
+
+## 天气地区
+
+`config.json` 的 `weather` 支持 `enabled`、`place`、`latitude`、`longitude`，启用后使用 Open-Meteo 当前天气。北京市海淀区示例坐标为 `39.99064, 116.28868`，取自服务的地区搜索。天气最多每 15 分钟重新获取一次；短暂失败显示带标记的旧值，超过两小时不再使用旧天气。页面标注天气时间和数据来源。
+
+天气随本地采集自动更新，也可单独运行 `npm run weather` 后 `npm run build`，这个命令只查询天气，不读取或采集 AI 服务额度。页面通过独立 `weather.js` 读取天气，仍遵循凌晨 3 点至 8 点暂停刷新的逻辑。
+
+需要单独更新公网天气时，再运行 `npm run publish:weather`。它仅发布天气及网页程序，并验证 `data.json`、`data.js` 的 Git 内容标识保持不变，不会采集或上传新的 AI 用量。此命令不创建定时任务；公网天气只有再次发布后才会变更。
 
 首次发布后，在仓库 Settings → Pages 中选择 Deploy from a branch、`gh-pages` 和 `/(root)`。网站地址通常为 `https://你的用户名.github.io/仓库名/`。后续推送会触发网页更新，GitHub 的构建和缓存可能带来几分钟延迟。
 

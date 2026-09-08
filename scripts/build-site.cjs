@@ -28,6 +28,9 @@ for (const name of required) {
 for (const name of ['data.json', 'data.js']) {
   writeAtomic(path.join(distDir, name), fs.readFileSync(path.join(stateDir, name)));
 }
+const weatherFile = path.join(stateDir, 'weather.js');
+writeAtomic(path.join(distDir, 'weather.js'), fs.existsSync(weatherFile)
+  ? fs.readFileSync(weatherFile) : 'window.DASH_WEATHER = null;\n');
 const endpoint = process.env.DASHBOARD_URL
   ? process.env.DASHBOARD_URL.replace(/\/+$/, '') + '/data.js'
   : 'data.js';
