@@ -1,0 +1,1 @@
+window.DASH_WEATHER = {"ok":true,"description":"阴","iconKey":"cloudy","place":"北京市海淀区","tempC":17.5,"feelsLikeC":17.8,"humidity":73,"windKph":3.8,"windDir":"西北风","observedAt":"2026-09-09T07:30:00.000+08:00","fetchedAt":"2026-09-09T07:35:55.135+08:00","source":"Open-Meteo","error":null};

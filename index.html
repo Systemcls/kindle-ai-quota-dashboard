@@ -69,6 +69,8 @@ body {
 .w-icon { color: #444444; color: var(--mid); }
 .w-icon svg { width: 30px; height: 30px; }
 .w-detail { font-size: 13px; color: #666666; color: var(--light); line-height: 1.7; }
+.w-credit { font-size: 11px; line-height: 1.6; color: #666666; }
+.w-credit a { color: inherit; }
 
 /* ===== Quote ===== */
 .quote {
@@ -169,6 +171,7 @@ body {
       <span class="w-icon" id="weatherIcon"></span>
     </div>
     <div class="w-detail sans" id="weatherDetail">天气未配置</div>
+    <div class="w-credit sans">天气数据：<a href="https://open-meteo.com/">Open-Meteo</a></div>
   </div>
   </td>
 </tr></tbody></table>
@@ -248,7 +251,8 @@ body {
 </div>
 
 <script src="data.js"></script>
+<script src="weather.js"></script>
 <script src="live-endpoint.js"></script>
-<script src="dashboard-runtime.js?v=20260909-table1"></script>
+<script src="dashboard-runtime.js?v=20260909-weather1"></script>
 </body>
 </html>

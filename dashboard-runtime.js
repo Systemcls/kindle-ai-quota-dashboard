@@ -375,7 +375,7 @@
     if (!weather || !weather.ok) {
       ui.text('weatherTemp', '--°');
       ui.text('weatherIcon', '');
-      ui.text('weatherDetail', '天气未配置');
+      ui.text('weatherDetail', weather && weather.place ? weather.place + ' · 天气获取失败' : '天气未配置');
       return;
     }
     ui.text('weatherTemp', Math.round(Number(weather.tempC)) + '°');
@@ -385,15 +385,20 @@
         selectWeatherIcon(weather.iconKey, weather.description) +
       '</span>'
     );
-    ui.textNode(
-      ui.find('weatherDetail'),
-      String(weather.description || '天气') +
-        ' · 体感 ' + Math.round(Number(weather.feelsLikeC)) +
-        '° · 湿度 ' + Math.round(Number(weather.humidity)) +
-        '% · 风 ' + Math.round(Number(weather.windKph)) +
-        'km/h · ' + String(weather.place || '') +
-        (weather.stale ? ' · 旧值 · 天气源本轮失败' : '')
-    );
+    var parts = [String(weather.place || ''), String(weather.description || '天气')];
+    if (finiteNumber(weather.feelsLikeC)) parts.push('体感 ' + Math.round(weather.feelsLikeC) + '°');
+    if (finiteNumber(weather.humidity)) parts.push('湿度 ' + Math.round(weather.humidity) + '%');
+    if (finiteNumber(weather.windKph)) parts.push(String(weather.windDir || '风') + ' ' + Math.round(weather.windKph) + 'km/h');
+    if (weather.observedAt) parts.push('天气时间 ' + clockText(weather.observedAt));
+    if (weather.stale) parts.push('旧值 · 天气源本轮失败');
+    ui.text('weatherDetail', parts.join(' · '));
+  }
+
+  function selectedWeather(data) {
+    var separate = win.DASH_WEATHER;
+    if (data && data.mode === 'live' && validWeather(separate) &&
+        timestamp(separate.fetchedAt) >= timestamp(data.weather.fetchedAt)) return separate;
+    return data && data.weather;
   }
 
   function updateBalance(source) {
@@ -427,7 +432,7 @@
     state.usingCache = !!fromCache;
     if (data.updatedAt !== state.renderedAt) {
       state.renderedAt = data.updatedAt;
-      updateWeather(data.weather);
+      updateWeather(selectedWeather(data));
       updateQuotaCard('cardCodex', data.sources.codex);
       updateQuotaCard('cardGlm', data.sources.glm);
       updateBalance(data.sources.deepseek);
@@ -476,6 +481,9 @@
   }
 
   function refresh() {
+    attachScript('weather.js?_=' + Date.now(), function () {
+      if (state.latest) updateWeather(selectedWeather(state.latest));
+    });
     requestDeviceStatus();
     win.DASH_LIVE_ENDPOINT = '';
     attachScript(
