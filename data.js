@@ -1,6 +1,6 @@
 window.DASH_DATA = {
   "mode": "live",
-  "updatedAt": "2026-09-09T01:08:36.251+08:00",
+  "updatedAt": "2026-09-09T01:22:01.553+08:00",
   "weather": {
     "ok": false,
     "description": null,
@@ -12,14 +12,14 @@ window.DASH_DATA = {
     "windDir": null,
     "place": null,
     "observedAt": null,
-    "fetchedAt": "2026-09-09T01:08:36.251+08:00"
+    "fetchedAt": "2026-09-09T01:22:01.553+08:00"
   },
   "quote": null,
   "sources": {
     "claude": {
       "ok": false,
       "label": "Claude",
-      "fetchedAt": "2026-09-09T01:08:33.976+08:00",
+      "fetchedAt": "2026-09-09T01:21:57.946+08:00",
       "stale": false,
       "disabled": true,
       "needsSetup": false,
@@ -29,7 +29,7 @@ window.DASH_DATA = {
     "codex": {
       "ok": true,
       "label": "Codex",
-      "fetchedAt": "2026-09-09T01:08:33.976+08:00",
+      "fetchedAt": "2026-09-09T01:21:57.946+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
@@ -38,14 +38,14 @@ window.DASH_DATA = {
         {
           "name": "周",
           "usedPct": 18,
-          "resetAt": "2026-09-15T11:32:14.000+08:00"
+          "resetAt": "2026-09-15T11:32:15.000+08:00"
         }
       ]
     },
     "kimi": {
       "ok": false,
       "label": "Kimi",
-      "fetchedAt": "2026-09-09T01:08:34.017+08:00",
+      "fetchedAt": "2026-09-09T01:21:57.987+08:00",
       "stale": false,
       "disabled": true,
       "needsSetup": false,
@@ -55,7 +55,7 @@ window.DASH_DATA = {
     "deepseek": {
       "ok": true,
       "label": "DeepSeek",
-      "fetchedAt": "2026-09-09T01:08:34.018+08:00",
+      "fetchedAt": "2026-09-09T01:21:57.987+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
@@ -66,7 +66,7 @@ window.DASH_DATA = {
     "glm": {
       "ok": true,
       "label": "GLM",
-      "fetchedAt": "2026-09-09T01:08:34.074+08:00",
+      "fetchedAt": "2026-09-09T01:21:58.042+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
