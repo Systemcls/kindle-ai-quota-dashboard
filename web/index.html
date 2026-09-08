@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dashboard-layout" content="kindle-table-v1">
 <title>Kindle AI Quota Dashboard</title>
 <style>
 :root {
@@ -27,100 +28,111 @@
   --faint: #999999; --border: #AAAAAA; --border-light: #CCCCCC;
   --bar-bg: #DDDDDD; --bar-fill: #333333; --card-bg: #F8F8F8;
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; -webkit-box-sizing: border-box; box-sizing: border-box; }
 body {
   font-family: Georgia, 'Noto Serif SC', 'SimSun', serif;
-  background: var(--bg); color: var(--fg);
+  background: #FFFFFF; background: var(--bg); color: #000000; color: var(--fg);
   width: 100%; max-width: 600px; min-height: 800px; margin: 0 auto;
-  padding: 24px 24px 16px; display: flex; flex-direction: column;
+  padding: 24px 24px 16px;
 }
 .sans { font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif; }
 .mono { font-family: 'Consolas', 'Courier New', monospace; font-variant-numeric: tabular-nums; }
 
 /* ===== Top: DateTime + Weather ===== */
 .top-row {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  width: 100%; table-layout: fixed; border-collapse: collapse;
   margin-bottom: 20px;
 }
+.layout-cell { width: 50%; vertical-align: top; }
+.layout-left { padding-right: 7px; }
+.layout-right { padding-left: 7px; }
+.layout-bottom { padding-top: 14px; }
 .weather-card, .datetime-card {
-  background: var(--card-bg); border: 1px solid var(--border-light); padding: 14px 16px;
+  background: #F8F8F8; background: var(--card-bg); border: 1px solid #CCCCCC; border: 1px solid var(--border-light); padding: 14px 16px;
 }
 
 /* DateTime card */
 .dt-time { font-size: 40px; font-weight: 700; line-height: 1; letter-spacing: -1px; }
-.dt-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-.dt-date { font-size: 15px; color: var(--mid); }
-.dt-week { font-size: 14px; color: var(--light); }
-.dt-battery { font-size: 13px; color: var(--light); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
-.dt-battery svg { width: 16px; height: 12px; }
+.dt-meta { margin-top: 8px; }
+.dt-meta span { display: inline-block; vertical-align: middle; }
+.dt-meta .dt-date { margin-right: 8px; }
+.dt-date { font-size: 15px; color: #444444; color: var(--mid); }
+.dt-week { font-size: 14px; color: #666666; color: var(--light); }
+.dt-battery { font-size: 13px; color: #666666; color: var(--light); margin-top: 6px; }
+.dt-battery svg { width: 16px; height: 12px; vertical-align: middle; margin-right: 4px; }
 
 /* Weather card */
-.w-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.w-row { margin-bottom: 4px; }
+.w-row span { display: inline-block; vertical-align: middle; }
+.w-row .w-icon { margin-left: 10px; }
 .w-temp { font-size: 40px; font-weight: 700; line-height: 1; }
-.w-icon { color: var(--mid); }
+.w-icon { color: #444444; color: var(--mid); }
 .w-icon svg { width: 30px; height: 30px; }
-.w-detail { font-size: 13px; color: var(--light); line-height: 1.7; }
+.w-detail { font-size: 13px; color: #666666; color: var(--light); line-height: 1.7; }
 
 /* ===== Quote ===== */
 .quote {
   text-align: center; padding: 16px 24px;
-  border: 1px solid var(--border-light); position: relative;
+  border: 1px solid #CCCCCC; border: 1px solid var(--border-light); position: relative;
   margin-bottom: 20px;
 }
 .quote::before, .quote::after {
-  position: absolute; font-size: 28px; color: var(--faint); font-family: Georgia, serif; line-height: 1;
+  position: absolute; font-size: 28px; color: #999999; color: var(--faint); font-family: Georgia, serif; line-height: 1;
 }
 .quote::before { content: '\201C'; top: 6px; left: 12px; }
 .quote::after { content: '\201D'; bottom: 2px; right: 12px; }
 .quote-text { font-size: 19px; line-height: 1.8; font-style: italic; margin-bottom: 4px; }
-.quote-src { font-size: 12px; color: var(--light); letter-spacing: 0.05em; }
+.quote-src { font-size: 12px; color: #666666; color: var(--light); letter-spacing: 0.05em; }
 
 /* ===== Quota cards ===== */
 .quota-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px;
-  align-content: start;
+  width: 100%; table-layout: fixed; border-collapse: collapse;
 }
 .q-card {
-  background: var(--card-bg); border: 1px solid var(--border-light);
-  padding: 12px 14px; display: flex; flex-direction: column;
+  background: #F8F8F8; background: var(--card-bg); border: 1px solid #CCCCCC; border: 1px solid var(--border-light);
+  padding: 12px 14px;
 }
 .q-head {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  margin-bottom: 10px;
 }
-.q-head svg { width: 20px; height: 20px; flex-shrink: 0; }
-.q-name { font-size: 17px; font-weight: 600; }
+.q-head svg { width: 20px; height: 20px; vertical-align: middle; margin-right: 8px; }
+.q-name { display: inline-block; vertical-align: middle; font-size: 17px; font-weight: 600; }
 
 /* Single bar row */
 .q-row { margin-bottom: 8px; }
 .q-row:last-child { margin-bottom: 0; }
 .q-label {
-  display: flex; justify-content: space-between; margin-bottom: 3px;
-  font-size: 11px; color: var(--light); letter-spacing: 0.06em;
+  position: relative; padding-right: 50px; min-height: 16px; margin-bottom: 3px;
+  font-size: 11px; color: #666666; color: var(--light); letter-spacing: 0.06em;
 }
-.q-label .q-pct { color: var(--mid); font-size: 13px; font-weight: 600; }
-.q-bar { height: 8px; background: var(--bar-bg); width: 100%; }
-.q-bar-fill { height: 100%; background: var(--bar-fill); }
-.q-refresh { font-size: 11px; color: var(--faint); margin-top: 2px; letter-spacing: 0.03em; }
+.q-label .q-pct { position: absolute; top: 0; right: 0; color: #444444; color: var(--mid); font-size: 13px; font-weight: 600; }
+.q-bar { height: 8px; background: #DDDDDD; background: var(--bar-bg); width: 100%; }
+.q-bar-fill { height: 100%; background: #333333; background: var(--bar-fill); }
+.q-refresh { font-size: 11px; color: #999999; color: var(--faint); margin-top: 2px; letter-spacing: 0.03em; }
 
-#cardDeepSeek { grid-column: 1 / -1; }
 .q-card { min-height: 180px; }
-.q-refresh { color: var(--light); line-height: 1.6; }
+.q-refresh { color: #666666; color: var(--light); line-height: 1.6; }
 @media (max-width: 420px) {
-  body { padding: 16px; }
-  .top-row, .quota-grid { grid-template-columns: 1fr; }
+  body { padding: 12px; }
+  .q-card, .weather-card, .datetime-card { padding: 10px; }
+  .q-name { font-size: 15px; }
+  .layout-left { padding-right: 5px; }
+  .layout-right { padding-left: 5px; }
 }
 
 /* DeepSeek balance */
 .q-balance { font-size: 24px; font-weight: 700; margin: 6px 0 4px; }
-.q-balance-unit { font-size: 12px; font-weight: 400; color: var(--light); }
-.q-balance-sub { font-size: 11px; color: var(--faint); }
+.q-balance-unit { font-size: 12px; font-weight: 400; color: #666666; color: var(--light); }
+.q-balance-sub { font-size: 11px; color: #999999; color: var(--faint); }
 
 /* ===== Footer ===== */
 .footer {
-  margin-top: 16px; display: flex; justify-content: space-between; align-items: center;
-  padding-top: 8px; border-top: 1px solid var(--border);
-  font-size: 11px; color: var(--light);
+  margin-top: 16px; display: table; width: 100%; table-layout: fixed;
+  padding-top: 8px; border-top: 1px solid #AAAAAA; border-top: 1px solid var(--border);
+  font-size: 11px; color: #666666; color: var(--light);
 }
+.footer > span { display: table-cell; vertical-align: middle; }
+.footer #dataStatus { text-align: right; }
 .data-alert {
   display: none; margin: -10px 0 12px; padding: 6px 10px;
   border: 2px solid #000; text-align: center;
@@ -134,7 +146,9 @@ body {
 <body>
 
 <!-- ===== Top: DateTime + Weather ===== -->
-<div class="top-row">
+<!-- Tables keep two columns even on Kindle browsers without Grid or Flexbox. -->
+<table class="top-row" role="presentation"><tbody><tr>
+  <td class="layout-cell layout-left">
   <div class="datetime-card">
     <div class="dt-time mono" id="dtTime">--:--</div>
     <div class="dt-meta">
@@ -147,6 +161,8 @@ body {
     </div>
   </div>
 
+  </td>
+  <td class="layout-cell layout-right">
   <div class="weather-card">
     <div class="w-row">
       <span class="w-temp" id="weatherTemp">--°</span>
@@ -154,7 +170,8 @@ body {
     </div>
     <div class="w-detail sans" id="weatherDetail">天气未配置</div>
   </div>
-</div>
+  </td>
+</tr></tbody></table>
 
 <div class="data-alert" id="dataAlert"></div>
 
@@ -165,7 +182,8 @@ body {
 </div>
 
 <!-- ===== AI Quotas ===== -->
-<div class="quota-grid">
+<table class="quota-grid" role="presentation"><tbody><tr>
+  <td class="layout-cell layout-left">
   <!-- GPT / Codex -->
   <div class="q-card" id="cardCodex">
     <div class="q-head">
@@ -184,6 +202,8 @@ body {
     </div>
   </div>
 
+  </td>
+  <td class="layout-cell layout-right">
   <!-- GLM Coding Plan -->
   <div class="q-card" id="cardGlm">
     <div class="q-head">
@@ -206,6 +226,9 @@ body {
     </div>
   </div>
 
+  </td>
+</tr><tr>
+  <td colspan="2" class="layout-bottom">
   <!-- DeepSeek -->
   <div class="q-card" id="cardDeepSeek">
     <div class="q-head">
@@ -215,7 +238,8 @@ body {
     <div class="q-balance mono"><span id="deepSeekBalance">¥ --</span> <span class="q-balance-unit sans">API 余额</span></div>
     <div class="q-balance-sub sans" id="deepSeekDetail">等待实时数据</div>
   </div>
-</div>
+  </td>
+</tr></tbody></table>
 
 <!-- ===== Footer ===== -->
 <div class="footer sans">
@@ -225,6 +249,6 @@ body {
 
 <script src="data.js"></script>
 <script src="live-endpoint.js"></script>
-<script src="dashboard-runtime.js?v=20260908"></script>
+<script src="dashboard-runtime.js?v=20260909-table1"></script>
 </body>
 </html>

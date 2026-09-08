@@ -251,7 +251,7 @@
       if (device.charging === 0 || device.charging === 1) charging = device.charging === 1;
     }
     if (percent === null || isNaN(percent)) return;
-    ui.style(ui.find('dtBattery'), 'display', 'flex');
+    ui.style(ui.find('dtBattery'), 'display', 'block');
 
     percent = Math.max(0, Math.min(100, percent));
     ui.text('batPct', (charging ? '⚡ ' : '') + percent + '%');
