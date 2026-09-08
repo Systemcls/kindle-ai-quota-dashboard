@@ -14,14 +14,16 @@ async function collectDeepSeek(config = {}) {
   }
   const envName = String(config.apiKeyEnv || 'DEEPSEEK_API_KEY');
   const key = String(process.env[envName] || '').trim();
-  if (!key) return failedBalance('DeepSeek', `没有设置环境变量 ${envName}`, fetchedAt);
+  if (!key) return { ...failedBalance('DeepSeek', '请配置 DeepSeek API 密钥', fetchedAt), needsSetup: true };
   try {
     const payload = await fetchJson('https://api.deepseek.com/user/balance', {
       headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
+      redirect: 'error',
     });
     const rows = Array.isArray(payload && payload.balance_infos) ? payload.balance_infos : [];
     const row = rows.find((item) => item && item.currency === 'CNY') || rows[0];
-    const balance = Number(row && row.total_balance);
+    const balance = row && ['number', 'string'].includes(typeof row.total_balance) && String(row.total_balance).trim() !== ''
+      ? Number(row.total_balance) : NaN;
     if (!Number.isFinite(balance)) throw new Error('余额响应缺少 total_balance');
     const currency = String(row.currency || 'CNY');
     return {
@@ -34,7 +36,7 @@ async function collectDeepSeek(config = {}) {
       error: null,
     };
   } catch (error) {
-    return failedBalance('DeepSeek', error, fetchedAt);
+    return failedBalance('DeepSeek', 'DeepSeek 查询失败，请检查网络与 API 密钥', fetchedAt);
   }
 }
 

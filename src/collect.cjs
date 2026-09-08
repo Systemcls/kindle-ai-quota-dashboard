@@ -6,6 +6,8 @@ const { collectClaude } = require('./collectors/claude.cjs');
 const { collectCodex } = require('./collectors/codex.cjs');
 const { collectDeepSeek } = require('./collectors/deepseek.cjs');
 const { collectKimi } = require('./collectors/kimi.cjs');
+const { collectGlm } = require('./collectors/glm.cjs');
+const { loadLocalEnv } = require('./lib/local-env.cjs');
 const { ROOT, loadConfig } = require('./lib/config.cjs');
 const {
   isoBeijing,
@@ -14,7 +16,7 @@ const {
   writeAtomic,
 } = require('./lib/common.cjs');
 
-const SOURCE_NAMES = ['claude', 'codex', 'kimi', 'deepseek'];
+const SOURCE_NAMES = ['claude', 'codex', 'kimi', 'deepseek', 'glm'];
 
 function readQuote(filePath) {
   if (!filePath) return null;
@@ -86,6 +88,7 @@ function demoSnapshot() {
   const now = isoBeijing();
   const afterHours = (hours) => isoBeijing(Date.now() + hours * 60 * 60 * 1000);
   return {
+    mode: 'demo',
     updatedAt: now,
     weather: {
       ok: true,
@@ -106,6 +109,15 @@ function demoSnapshot() {
       source: '开源演示',
     },
     sources: {
+      glm: {
+        ok: true, label: 'GLM',
+        windows: [
+          { name: '5小时', usedPct: 32, resetAt: afterHours(2) },
+          { name: '周', usedPct: 45, resetAt: afterHours(72) },
+          { name: 'MCP 月额度', usedPct: 10, resetAt: null },
+        ],
+        fetchedAt: now, error: null,
+      },
       claude: {
         ok: true,
         label: 'Claude',
@@ -148,17 +160,19 @@ function demoSnapshot() {
 
 async function realSnapshot(config) {
   const providers = config.providers || {};
-  const [claude, codex, kimi, deepseek] = await Promise.all([
+  const [claude, codex, kimi, deepseek, glm] = await Promise.all([
     collectClaude(providers.claude),
     collectCodex(providers.codex),
     collectKimi(providers.kimi),
     collectDeepSeek(providers.deepseek),
+    collectGlm(providers.glm),
   ]);
   return {
+    mode: 'live',
     updatedAt: isoBeijing(),
     weather: readWeather(config.weatherFile),
     quote: readQuote(config.quoteFile),
-    sources: { claude, codex, kimi, deepseek },
+    sources: { claude, codex, kimi, deepseek, glm },
   };
 }
 
@@ -172,10 +186,11 @@ function previousSnapshot(outputDir) {
 
 function preserveLastKnownGood(snapshot, previous) {
   if (!previous || !previous.sources) return snapshot;
+  if (snapshot.mode !== previous.mode) return snapshot;
   for (const name of SOURCE_NAMES) {
     const current = snapshot.sources[name];
     const fallback = previous.sources[name];
-    if (!current || current.ok || current.disabled || !fallback || !fallback.ok) continue;
+    if (!current || current.ok || current.disabled || current.needsSetup || !fallback || !fallback.ok) continue;
     snapshot.sources[name] = {
       ...fallback,
       stale: true,
@@ -226,6 +241,7 @@ function writeSnapshot(snapshot, outputDir, keepLocalHistory) {
 
 async function main() {
   const demo = process.argv.includes('--demo');
+  if (!demo) loadLocalEnv();
   const config = demo
     ? { outputDir: path.join(ROOT, 'state'), keepLocalHistory: false }
     : loadConfig();

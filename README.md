@@ -1,17 +1,21 @@
 # Kindle AI 额度中控台
 
-把吃灰的 Kindle 变成 AI 额度监控屏。实时显示 Claude、Codex、Kimi、DeepSeek 的用量，外加天气和每日一语。
+这个 Fork 的默认面板显示 **Codex 套餐用量、DeepSeek API 余额、GLM Coding Plan 套餐用量**。保留上游的天气、每日一语以及 Claude / Kimi 采集器。
+
+**先在电脑上运行，无需越狱。** 按 [三平台接入指南](docs/providers.md) 配置本地密钥，运行 `npm run refresh` 和 `npm run serve` 即可查看。持续采集使用 `npm run watch`。下方原有 Kindle 安装和 GitHub Pages 部署流程属于后续可选步骤。
+
+> Kindle X 咪咕版不是标准 Kindle 系统，不能直接套用下方的 WinterBreak / KUAL 指南。未越狱设备能否直接打开面板，需要确认设备上有可用浏览器；USB 连接本身不会让面板显示在 Kindle 上。
 
 **不需要同一个 WiFi。** 电脑和 Kindle 可以在不同的网络——数据通过 GitHub Pages 中转，只要两边都能上网就行。这是和 GitHub 上其他类似项目最大的区别：它们大多要求电脑和显示设备在同一个局域网里。
 
-![中控台效果](docs/screenshot.png)
+![上游四平台布局示例（本 Fork 已调整为三平台）](docs/screenshot.png)
 
 ---
 
 ## 它能做什么？
 
 - **跨网络实时同步**——电脑在公司、Kindle 在家，额度照样更新
-- 实时监控多个 AI 平台的额度用量（支持 Claude / Codex / Kimi / DeepSeek，可自行增减）
+- 默认显示 Codex / GLM Coding Plan 用量和 DeepSeek API 余额，按接口返回的周期展示
 - 在 Kindle 墨水屏上全屏显示，放桌上一眼就能看到谁快没额度了
 - 自带天气显示、电池电量、每日一语
 - 夜间自动省电（03:00–08:00 停止刷新）

@@ -5,8 +5,13 @@
   "weatherFile": "",
   "providers": {
     "deepseek": {
-      "enabled": false,
+      "enabled": true,
       "apiKeyEnv": "DEEPSEEK_API_KEY"
+    },
+    "glm": {
+      "enabled": true,
+      "apiKeyEnv": "GLM_API_KEY",
+      "platform": "bigmodel"
     },
     "claude": {
       "enabled": false,
@@ -15,7 +20,7 @@
       "credentialsFile": "~/.claude/.credentials.json"
     },
     "codex": {
-      "enabled": false,
+      "enabled": true,
       "experimental": true,
       "executableEnv": "CODEX_CLI_PATH"
     },

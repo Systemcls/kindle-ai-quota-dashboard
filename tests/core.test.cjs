@@ -16,6 +16,38 @@ const {
 const { safeError } = require('../src/lib/common.cjs');
 const { ROOT, validateConfig } = require('../src/lib/config.cjs');
 const { collectProblems } = require('../scripts/check-public.cjs');
+const { parseGlmQuota, collectGlm } = require('../src/collectors/glm.cjs');
+const { parseCodexLimits } = require('../src/collectors/codex.cjs');
+const { collectDeepSeek } = require('../src/collectors/deepseek.cjs');
+const { loadLocalEnv } = require('../src/lib/local-env.cjs');
+const { publicSnapshot, prepareFiles, FILES } = require('../scripts/publish-pages.cjs');
+
+test('Pages publication includes only display files and removes raw account errors', () => {
+  const snapshot = demoSnapshot();
+  assert.throws(() => publicSnapshot(snapshot), /只发布真实/);
+  snapshot.mode = 'live';
+  snapshot.sources.codex.error = 'private diagnostic';
+  snapshot.sources.codex.accountId = 'private account';
+  snapshot.sources.glm.windows[0].accessToken = 'private token';
+  const clean = publicSnapshot(snapshot);
+  assert.doesNotMatch(JSON.stringify(clean), /private/);
+  assert.equal(clean.sources.codex.ok, true);
+  assert.equal(clean.sources.glm.windows[0].usedPct, 32);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kindle-pages-test-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(snapshot));
+    fs.writeFileSync(path.join(dir, 'index.html'), '<html>dashboard</html>');
+    fs.writeFileSync(path.join(dir, 'dashboard-runtime.js'), 'window.ready=true;');
+    fs.writeFileSync(path.join(dir, '.env'), 'local-only');
+    const files = prepareFiles(dir);
+    assert.deepEqual(Object.keys(files).sort(), [...FILES].sort());
+    assert.equal(files['live-endpoint.js'], 'window.DASH_LIVE_ENDPOINT = "data.js";\n');
+    assert.deepEqual(JSON.parse(files['data.json']), clean);
+    assert.throws(() => prepareFiles(dir, ['dashboard']), /包含本地凭据/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test('demo snapshot passes the public schema', () => {
   const snapshot = demoSnapshot();
@@ -91,6 +123,7 @@ test('browser runtime is valid JavaScript', () => {
 function runBrowserRuntime(snapshot, storage) {
   const nodes = new Map();
   function node() {
+    const children = new Map();
     return {
       textContent: '',
       innerHTML: '',
@@ -98,8 +131,15 @@ function runBrowserRuntime(snapshot, storage) {
       style: {},
       getAttribute() { return null; },
       setAttribute() {},
-      querySelector() { return node(); },
-      querySelectorAll() { return []; },
+      querySelector(selector) {
+        if (!children.has(selector)) children.set(selector, node());
+        return children.get(selector);
+      },
+      querySelectorAll(selector) {
+        if (!children.has(selector)) children.set(selector,
+          Array.from({ length: selector === '.q-row' ? 3 : selector === '.q-label span' ? 2 : 0 }, node));
+        return children.get(selector);
+      },
     };
   }
   function namedNode(name) {
@@ -134,8 +174,9 @@ function runBrowserRuntime(snapshot, storage) {
 test('browser runtime restores a valid cache and rejects older replacement data', () => {
   const storage = new Map();
   const fresh = demoSnapshot();
+  fresh.mode = 'live';
   runBrowserRuntime(fresh, storage);
-  const cacheKey = 'kindle_ai_quota_cache_v1';
+  const cacheKey = 'kindle_ai_quota_cache_v2';
   const cached = storage.get(cacheKey);
   assert.ok(cached, 'fresh data should be cached');
 
@@ -143,9 +184,149 @@ test('browser runtime restores a valid cache and rejects older replacement data'
   assert.equal(restored.nodes.get('#deepSeekBalance').textContent, '¥ 12.34');
 
   const older = demoSnapshot();
+  older.mode = 'live';
   older.updatedAt = '2025-01-01T00:00:00+08:00';
   runBrowserRuntime(older, storage);
   assert.equal(storage.get(cacheKey), cached, 'older data must not replace a newer cache');
+});
+
+test('GLM parses five-hour, weekly and MCP windows without inventing reset times', () => {
+  const windows = parseGlmQuota({ code: 200, success: true, data: { limits: [
+    { type: 'TOKENS_LIMIT', unit: 3, number: 5, percentage: 0, nextResetTime: 1800000000000 },
+    { type: 'CREDIT_LIMIT', unit: 6, number: 1, percentage: '42.5', nextResetTime: 1800000000 },
+    { type: 'TIME_LIMIT', currentValue: 20, usage: 100 },
+  ] } });
+  assert.deepEqual(windows.map(item => [item.name, item.usedPct]), [
+    ['5小时', 0], ['周', 42.5], ['MCP 月额度', 20],
+  ]);
+  assert.equal(windows[0].resetAt, windows[1].resetAt);
+  assert.equal(windows[2].resetAt, null);
+  for (const percentage of [null, '', false, [], -1, 101]) {
+    assert.throws(() => parseGlmQuota({ limits: [{ type: 'TOKENS_LIMIT', percentage }] }), /有效用量/);
+  }
+  assert.throws(() => parseGlmQuota({ code: 401, data: { limits: [] } }), /被拒绝/);
+  assert.throws(() => parseGlmQuota({ success: false }), /被拒绝/);
+});
+
+test('Codex chooses its quota bucket and never interprets null as zero usage', () => {
+  const payload = { rateLimitsByLimitId: {
+    other: { primary: { usedPercent: 99 } },
+    codex: { primary: { usedPercent: null }, secondary: { usedPercent: 14, windowDurationMins: 10080 } },
+  } };
+  assert.deepEqual(parseCodexLimits(payload), [{ name: '周', usedPct: 14, resetAt: null }]);
+  delete payload.rateLimitsByLimitId.codex;
+  assert.throws(() => parseCodexLimits(payload), /没有 rateLimits/);
+  assert.equal(parseCodexLimits({ rateLimits: { primary: { usedPercent: 0, windowDurationMins: 300 } } })[0].usedPct, 0);
+});
+
+test('local env preserves process values and does not expand shell expressions', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kindle-env-test-'));
+  try {
+    const file = path.join(dir, '.env');
+    fs.writeFileSync(file, '# comment\nEXISTING=file\nQUOTED="with # hash"\nPLAIN=value # comment\nLITERAL=$(example)\n');
+    const env = { EXISTING: 'process' };
+    loadLocalEnv(file, env);
+    assert.deepEqual(env, { EXISTING: 'process', QUOTED: 'with # hash', PLAIN: 'value', LITERAL: '$(example)' });
+    fs.writeFileSync(file, 'invalid line\n');
+    assert.throws(() => loadLocalEnv(file, {}), /第 1 行格式错误/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('GLM uses the selected official endpoint and does not expose provider errors', async () => {
+  const oldFetch = global.fetch;
+  const oldKey = process.env.QUOTA_TEST_CREDENTIAL;
+  const oldPlatform = process.env.GLM_PLATFORM;
+  const config = { enabled: true, apiKeyEnv: 'QUOTA_TEST_CREDENTIAL' };
+  try {
+    delete process.env.QUOTA_TEST_CREDENTIAL;
+    global.fetch = () => { throw new Error('network must not be used'); };
+    assert.equal((await collectGlm(config)).needsSetup, true);
+    assert.equal((await collectDeepSeek(config)).needsSetup, true);
+    process.env.QUOTA_TEST_CREDENTIAL = 'fixture';
+    for (const [platform, origin] of [['bigmodel', 'https://open.bigmodel.cn'], ['zai', 'https://api.z.ai']]) {
+      process.env.GLM_PLATFORM = platform;
+      global.fetch = async (url, options) => {
+        assert.equal(url, origin + '/api/monitor/usage/quota/limit');
+        assert.equal(options.headers.Authorization, 'fixture');
+        assert.equal(options.redirect, 'error');
+        return { ok: true, text: async () => JSON.stringify({ data: { limits: [{ type: 'TOKENS_LIMIT', percentage: 10 }] } }) };
+      };
+      assert.equal((await collectGlm(config)).ok, true);
+    }
+    process.env.GLM_PLATFORM = 'unsupported';
+    global.fetch = () => { throw new Error('unexpected request'); };
+    assert.match((await collectGlm(config)).error, /平台应为/);
+    process.env.GLM_PLATFORM = 'bigmodel';
+    global.fetch = async () => ({ ok: false, status: 401, text: async () => JSON.stringify({ message: 'fixture' }) });
+    const failure = await collectGlm(config);
+    assert.equal(failure.ok, false);
+    assert.doesNotMatch(JSON.stringify(failure), /fixture/);
+  } finally {
+    global.fetch = oldFetch;
+    if (oldKey === undefined) delete process.env.QUOTA_TEST_CREDENTIAL;
+    else process.env.QUOTA_TEST_CREDENTIAL = oldKey;
+    if (oldPlatform === undefined) delete process.env.GLM_PLATFORM;
+    else process.env.GLM_PLATFORM = oldPlatform;
+  }
+});
+
+test('DeepSeek keeps currency and valid zero balances but rejects missing balances', async () => {
+  const oldFetch = global.fetch;
+  const oldKey = process.env.QUOTA_TEST_CREDENTIAL;
+  try {
+    process.env.QUOTA_TEST_CREDENTIAL = 'fixture';
+    for (const balance of ['0', '12.34', null, '', false]) {
+      global.fetch = async (url, options) => {
+        assert.equal(url, 'https://api.deepseek.com/user/balance');
+        assert.equal(options.headers.Authorization, 'Bearer fixture');
+        return { ok: true, text: async () => JSON.stringify({ balance_infos: [{ currency: 'USD', total_balance: balance }] }) };
+      };
+      const source = await collectDeepSeek({ enabled: true, apiKeyEnv: 'QUOTA_TEST_CREDENTIAL' });
+      assert.equal(source.ok, typeof balance === 'string' && balance !== '');
+      if (source.ok) {
+        assert.equal(source.balance, Number(balance));
+        assert.equal(source.currency, 'USD');
+      }
+    }
+  } finally {
+    global.fetch = oldFetch;
+    if (oldKey === undefined) delete process.env.QUOTA_TEST_CREDENTIAL;
+    else process.env.QUOTA_TEST_CREDENTIAL = oldKey;
+  }
+});
+
+test('live snapshots never fall back to demo data or disguise missing credentials', () => {
+  const previous = demoSnapshot();
+  const next = demoSnapshot();
+  next.mode = 'live';
+  next.sources.glm = { ok: false, windows: [], needsSetup: true };
+  next.sources.codex = { ok: false, windows: [] };
+  preserveLastKnownGood(next, previous);
+  assert.equal(next.sources.codex.ok, false);
+  previous.mode = 'live';
+  preserveLastKnownGood(next, previous);
+  assert.equal(next.sources.codex.stale, true);
+  assert.equal(next.sources.glm.ok, false);
+});
+
+test('dashboard shows GLM setup hints, currency and a clear demo label', () => {
+  const snapshot = demoSnapshot();
+  const storage = new Map();
+  const demo = runBrowserRuntime(snapshot, storage);
+  assert.equal(storage.size, 0, 'demo must not enter the live cache');
+  assert.match(demo.nodes.get('#dataAlert').textContent, /演示模式/);
+  snapshot.mode = 'live';
+  snapshot.sources.deepseek.currency = 'USD';
+  snapshot.sources.glm = { ok: false, label: 'GLM', windows: [], fetchedAt: snapshot.updatedAt,
+    needsSetup: true, error: '请配置 GLM Coding Plan 密钥' };
+  const live = runBrowserRuntime(snapshot, storage);
+  assert.equal(live.nodes.get('#deepSeekBalance').textContent, '$ 12.34');
+  const rows = live.nodes.get('#cardGlm').querySelectorAll('.q-row');
+  assert.equal(rows[0].querySelectorAll('.q-label span')[0].textContent, '待配置');
+  assert.match(rows[0].querySelector('.q-refresh').textContent, /Coding Plan 密钥/);
+  assert.equal(rows[1].style.display, 'none');
 });
 
 test('public checker skips ignored files on Windows paths but rejects exposed data', () => {

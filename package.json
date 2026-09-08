@@ -2,7 +2,7 @@
   "name": "kindle-ai-quota-dashboard",
   "version": "0.1.1",
   "private": true,
-  "description": "把本机 AI 服务额度安全地显示在越狱 Kindle 上。",
+  "description": "在浏览器和 Kindle 上显示 Codex、DeepSeek 与 GLM Coding Plan 的额度。",
   "license": "MIT",
   "author": "Kindle AI Quota Dashboard contributors",
   "engines": {
@@ -11,6 +11,9 @@
   "scripts": {
     "demo": "node src/collect.cjs --demo",
     "collect": "node src/collect.cjs",
+    "refresh": "node scripts/refresh.cjs",
+    "watch": "node scripts/refresh.cjs --watch",
+    "publish:pages": "node scripts/publish-pages.cjs --refresh",
     "build": "node scripts/build-site.cjs",
     "serve": "node scripts/serve.cjs",
     "package:kindle": "node scripts/build-kpkg.cjs",

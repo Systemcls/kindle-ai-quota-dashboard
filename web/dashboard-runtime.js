@@ -6,7 +6,7 @@
     endpointPointer: 'live-endpoint.js',
     pollEvery: 3 * 60 * 1000,
     pollOffset: 5000,
-    cacheKey: 'kindle_ai_quota_cache_v1',
+    cacheKey: 'kindle_ai_quota_cache_v2',
     maxCacheAge: 30 * 60 * 1000,
     quietStart: 3,
     quietEnd: 8
@@ -18,7 +18,7 @@
     usingCache: false,
     requestId: 0
   };
-  var sourceNames = ['claude', 'codex', 'kimi', 'deepseek'];
+  var sourceNames = ['codex', 'deepseek', 'glm'];
   var weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
   var ui = {
@@ -114,7 +114,7 @@
       raw = win.localStorage && win.localStorage.getItem(settings.cacheKey);
       if (!raw) return null;
       parsed = JSON.parse(raw);
-      if (!parsed || parsed.version !== 1 || !validPayload(parsed.payload)) return null;
+      if (!parsed || parsed.version !== 2 || !validPayload(parsed.payload) || parsed.payload.mode !== 'live') return null;
       if (Date.now() - timestamp(parsed.payload.updatedAt) > settings.maxCacheAge) {
         win.localStorage.removeItem(settings.cacheKey);
         return null;
@@ -128,11 +128,13 @@
   function storeCache(data) {
     var cached;
     if (!validPayload(data)) return false;
+    if (data.mode === 'demo') return true;
+    if (data.mode !== 'live') return false;
     cached = readCache();
     if (cached && timestamp(data.updatedAt) < timestamp(cached.updatedAt)) return false;
     try {
       if (win.localStorage) {
-        win.localStorage.setItem(settings.cacheKey, JSON.stringify({ version: 1, payload: data }));
+        win.localStorage.setItem(settings.cacheKey, JSON.stringify({ version: 2, payload: data }));
       }
     } catch (error) {}
     return true;
@@ -171,6 +173,13 @@
     var lastClock = clockText(lastUpdate);
     var status = ui.find('dataStatus');
     var alert = ui.find('dataAlert');
+
+    if (state.latest && state.latest.mode === 'demo') {
+      ui.textNode(status, '演示数据');
+      ui.textNode(alert, '演示模式 · 以下数字不是账户真实用量');
+      ui.className(alert, 'data-alert on');
+      return;
+    }
 
     if (state.latest) {
       ui.text('relTime', age < 1 ? '刚刚更新' : age + '分钟前更新');
@@ -242,6 +251,7 @@
       if (device.charging === 0 || device.charging === 1) charging = device.charging === 1;
     }
     if (percent === null || isNaN(percent)) return;
+    ui.style(ui.find('dtBattery'), 'display', 'flex');
 
     percent = Math.max(0, Math.min(100, percent));
     ui.text('batPct', (charging ? '⚡ ' : '') + percent + '%');
@@ -269,10 +279,8 @@
 
   function windowTitle(value) {
     var name = String(value || '');
-    if (/5小时|5H/i.test(name)) return '5H QUOTA';
-    if (/7天|周|WEEK/i.test(name)) return 'WEEKLY';
-    if (/月|MONTH/i.test(name)) return 'MONTHLY';
-    return name || 'QUOTA';
+    if (/MCP/i.test(name)) return 'MCP 月额度 · 已用';
+    return (name || '额度') + ' · 已用';
   }
 
   function remainingTime(value) {
@@ -292,17 +300,17 @@
     return '↻ ' + minutes + 'm';
   }
 
-  function showUnavailableQuota(rows) {
+  function showUnavailableQuota(rows, source) {
     var labels;
     if (!rows.length) return;
     ui.style(rows[0], 'display', 'block');
     labels = rows[0].querySelectorAll('.q-label span');
     if (labels.length > 1) {
-      ui.textNode(labels[0], '获取失败');
+      ui.textNode(labels[0], source && source.needsSetup ? '待配置' : source && source.disabled ? '未启用' : '获取失败');
       ui.textNode(labels[1], '--');
     }
     ui.style(rows[0].querySelector('.q-bar-fill'), 'width', '0%');
-    ui.textNode(rows[0].querySelector('.q-refresh'), '↻ 等待下次采集');
+    ui.textNode(rows[0].querySelector('.q-refresh'), source && source.error || '等待下次采集');
   }
 
   function updateQuotaCard(cardId, source) {
@@ -350,7 +358,7 @@
           (quotaWindow.detailText || remainingTime(quotaWindow.resetAt))
       );
     }
-    if (!windows.length) showUnavailableQuota(rows);
+    if (!windows.length) showUnavailableQuota(rows, source);
   }
 
   function selectWeatherIcon(key, description) {
@@ -364,7 +372,12 @@
   }
 
   function updateWeather(weather) {
-    if (!weather || !weather.ok) return;
+    if (!weather || !weather.ok) {
+      ui.text('weatherTemp', '--°');
+      ui.text('weatherIcon', '');
+      ui.text('weatherDetail', '天气未配置');
+      return;
+    }
     ui.text('weatherTemp', Math.round(Number(weather.tempC)) + '°');
     ui.html(
       ui.find('weatherIcon'),
@@ -372,28 +385,31 @@
         selectWeatherIcon(weather.iconKey, weather.description) +
       '</span>'
     );
-    ui.html(
+    ui.textNode(
       ui.find('weatherDetail'),
       String(weather.description || '天气') +
         ' · 体感 ' + Math.round(Number(weather.feelsLikeC)) +
         '° · 湿度 ' + Math.round(Number(weather.humidity)) +
-        '%<br>风 ' + Math.round(Number(weather.windKph)) +
-        'km/h · ' + String(weather.place || '北京') +
-        (weather.stale ? '<br>旧值 · 天气源本轮失败' : '')
+        '% · 风 ' + Math.round(Number(weather.windKph)) +
+        'km/h · ' + String(weather.place || '') +
+        (weather.stale ? ' · 旧值 · 天气源本轮失败' : '')
     );
   }
 
   function updateBalance(source) {
     if (source && source.ok && typeof source.balance === 'number') {
-      ui.text('deepSeekBalance', '¥ ' + Number(source.balance).toFixed(2));
+      var currency = source.currency === 'CNY' ? '¥' : source.currency === 'USD' ? '$' : source.currency || '';
+      ui.text('deepSeekBalance', currency + ' ' + Number(source.balance).toFixed(2));
       ui.text('deepSeekDetail', source.stale ? '旧值 · 最近一次成功' : '实时余额 · 按量计费');
       return;
     }
-    ui.text('deepSeekBalance', '¥ --');
-    ui.text('deepSeekDetail', '获取失败 · 等待下次采集');
+    ui.text('deepSeekBalance', '--');
+    ui.text('deepSeekDetail', (source && source.needsSetup ? '待配置 · ' : '') +
+      (source && source.error || '等待下次采集'));
   }
 
   function updateQuote(quote) {
+    ui.style(doc.querySelector('.quote'), 'display', quote && quote.text ? 'block' : 'none');
     if (!quote || !quote.text) return;
     ui.textNode(doc.querySelector('.quote-text'), quote.text);
     if (quote.source) {
@@ -412,9 +428,8 @@
     if (data.updatedAt !== state.renderedAt) {
       state.renderedAt = data.updatedAt;
       updateWeather(data.weather);
-      updateQuotaCard('cardClaude', data.sources.claude);
       updateQuotaCard('cardCodex', data.sources.codex);
-      updateQuotaCard('cardKimi', data.sources.kimi);
+      updateQuotaCard('cardGlm', data.sources.glm);
       updateBalance(data.sources.deepseek);
       updateQuote(data.quote);
       relativeNode = ui.find('relTime');

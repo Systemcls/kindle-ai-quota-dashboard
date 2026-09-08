@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { ROOT } = require('../src/lib/config.cjs');
+const { writeAtomic } = require('../src/lib/common.cjs');
 
 const webDir = path.join(ROOT, 'web');
 const stateDir = path.join(ROOT, 'state');
@@ -20,18 +21,17 @@ for (const name of ['data.json', 'data.js']) {
   }
 }
 
-fs.rmSync(distDir, { recursive: true, force: true });
 fs.mkdirSync(distDir, { recursive: true });
 for (const name of required) {
-  fs.copyFileSync(path.join(webDir, name), path.join(distDir, name));
+  writeAtomic(path.join(distDir, name), fs.readFileSync(path.join(webDir, name)));
 }
 for (const name of ['data.json', 'data.js']) {
-  fs.copyFileSync(path.join(stateDir, name), path.join(distDir, name));
+  writeAtomic(path.join(distDir, name), fs.readFileSync(path.join(stateDir, name)));
 }
 const endpoint = process.env.DASHBOARD_URL
   ? process.env.DASHBOARD_URL.replace(/\/+$/, '') + '/data.js'
   : 'data.js';
-fs.writeFileSync(path.join(distDir, 'live-endpoint.js'),
-  `window.DASH_LIVE_ENDPOINT = '${endpoint}';\n`, 'utf8');
+writeAtomic(path.join(distDir, 'live-endpoint.js'),
+  `window.DASH_LIVE_ENDPOINT = ${JSON.stringify(endpoint)};\n`);
 fs.writeFileSync(path.join(distDir, '.nojekyll'), '', 'utf8');
 process.stdout.write(`built ${distDir}\n`);

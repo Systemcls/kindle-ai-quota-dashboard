@@ -7,6 +7,7 @@ const { ROOT } = require('../src/lib/config.cjs');
 
 const root = path.join(ROOT, 'dist');
 const port = Number(process.env.PORT || 8787);
+const host = process.env.DASHBOARD_HOST || '127.0.0.1';
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -19,7 +20,14 @@ if (!fs.existsSync(path.join(root, 'index.html'))) {
 }
 
 const server = http.createServer((request, response) => {
-  const raw = decodeURIComponent(String(request.url || '/').split('?')[0]);
+  let raw;
+  try {
+    raw = decodeURIComponent(String(request.url || '/').split('?')[0]);
+  } catch {
+    response.writeHead(400);
+    response.end('Bad Request');
+    return;
+  }
   const relative = raw === '/' ? 'index.html' : raw.replace(/^\/+/, '');
   const filePath = path.resolve(root, relative);
   if (!filePath.startsWith(`${path.resolve(root)}${path.sep}`) && filePath !== path.resolve(root)) {
@@ -41,6 +49,6 @@ const server = http.createServer((request, response) => {
   });
 });
 
-server.listen(port, '127.0.0.1', () => {
-  process.stdout.write(`preview http://127.0.0.1:${port}\n`);
+server.listen(port, host, () => {
+  process.stdout.write(`preview http://${host}:${port}\n`);
 });

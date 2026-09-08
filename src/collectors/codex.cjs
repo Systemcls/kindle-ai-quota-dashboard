@@ -33,6 +33,7 @@ function readCodexRateLimits(executable, timeoutMs = 20_000) {
     }
 
     child.on('error', finish);
+    child.stdin.on('error', finish);
     child.stderr.setEncoding('utf8');
     child.stderr.on('data', (chunk) => { stderr = `${stderr}${chunk}`.slice(-1200); });
     child.on('exit', (code) => {
@@ -95,26 +96,32 @@ async function collectCodex(config = {}) {
   const executable = String(process.env[envName] || config.executable || 'codex').trim();
   try {
     const payload = await readCodexRateLimits(executable, Number(config.timeoutMs || 20_000));
-    const byId = payload && payload.rateLimitsByLimitId;
-    const bucket = byId && (byId.codex || Object.values(byId)[0]) || payload.rateLimits;
-    if (!bucket) throw new Error('Codex 响应中没有 rateLimits');
-    const windows = [];
-    for (const [key, fallback] of [['primary', '5小时'], ['secondary', '周']]) {
-      const item = bucket[key];
-      if (!item) continue;
-      const used = Number(item.usedPercent);
-      if (!Number.isFinite(used)) continue;
-      windows.push({
-        name: durationName(item.windowDurationMins, fallback),
-        usedPct: clampPct(used),
-        resetAt: item.resetsAt ? isoBeijing(Number(item.resetsAt) * 1000) : null,
-      });
-    }
-    if (!windows.length) throw new Error('Codex 响应中没有可识别的额度窗口');
+    const windows = parseCodexLimits(payload);
     return { ok: true, label: 'Codex', windows, fetchedAt, error: null };
   } catch (error) {
     return failedWindows('Codex', error, fetchedAt);
   }
 }
 
-module.exports = { collectCodex, durationName, readCodexRateLimits };
+function parseCodexLimits(payload) {
+  const byId = payload && payload.rateLimitsByLimitId;
+  const bucket = byId && byId.codex || payload && payload.rateLimits;
+  if (!bucket) throw new Error('Codex 响应中没有 rateLimits');
+  const windows = [];
+  for (const [key, fallback] of [['primary', '5小时'], ['secondary', '周']]) {
+    const item = bucket[key];
+    if (!item || !['number', 'string'].includes(typeof item.usedPercent) ||
+        String(item.usedPercent).trim() === '') continue;
+    const used = Number(item.usedPercent);
+    if (!Number.isFinite(used) || used < 0 || used > 100) continue;
+    windows.push({
+      name: durationName(item.windowDurationMins, fallback),
+      usedPct: clampPct(used),
+      resetAt: item.resetsAt ? isoBeijing(Number(item.resetsAt) * 1000) : null,
+    });
+  }
+  if (!windows.length) throw new Error('Codex 响应中没有可识别的额度窗口');
+  return windows;
+}
+
+module.exports = { collectCodex, durationName, readCodexRateLimits, parseCodexLimits };

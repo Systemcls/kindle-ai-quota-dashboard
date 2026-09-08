@@ -10,7 +10,8 @@
     "windKph": 6,
     "windDir": "东风",
     "place": "示例城市",
-    "observedAt": "2026-01-01T08:00:00.000+08:00"
+    "observedAt": "2026-01-01T08:00:00.000+08:00",
+    "fetchedAt": "2026-01-01T08:00:00.000+08:00"
   },
   "quote": {
     "text": "这是一条不包含私人信息的示例句子。",
@@ -74,6 +75,30 @@
       "detail": "余额 ¥12.34",
       "fetchedAt": "2026-01-01T08:00:00.000+08:00",
       "error": null
+    },
+    "glm": {
+      "ok": true,
+      "label": "GLM",
+      "windows": [
+        {
+          "name": "5小时",
+          "usedPct": 32,
+          "resetAt": null
+        },
+        {
+          "name": "周",
+          "usedPct": 45,
+          "resetAt": null
+        },
+        {
+          "name": "MCP 月额度",
+          "usedPct": 10,
+          "resetAt": null
+        }
+      ],
+      "fetchedAt": "2026-01-01T08:00:00.000+08:00",
+      "error": null
     }
-  }
+  },
+  "mode": "demo"
 }

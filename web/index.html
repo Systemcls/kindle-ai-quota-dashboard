@@ -31,7 +31,7 @@
 body {
   font-family: Georgia, 'Noto Serif SC', 'SimSun', serif;
   background: var(--bg); color: var(--fg);
-  width: 600px; height: 800px; overflow: hidden;
+  width: 100%; max-width: 600px; min-height: 800px; margin: 0 auto;
   padding: 24px 24px 16px; display: flex; flex-direction: column;
 }
 .sans { font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif; }
@@ -78,7 +78,7 @@ body {
 /* ===== Quota cards ===== */
 .quota-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px;
-  flex: 1;
+  align-content: start;
 }
 .q-card {
   background: var(--card-bg); border: 1px solid var(--border-light);
@@ -101,6 +101,14 @@ body {
 .q-bar { height: 8px; background: var(--bar-bg); width: 100%; }
 .q-bar-fill { height: 100%; background: var(--bar-fill); }
 .q-refresh { font-size: 11px; color: var(--faint); margin-top: 2px; letter-spacing: 0.03em; }
+
+#cardDeepSeek { grid-column: 1 / -1; }
+.q-card { min-height: 180px; }
+.q-refresh { color: var(--light); line-height: 1.6; }
+@media (max-width: 420px) {
+  body { padding: 16px; }
+  .top-row, .quota-grid { grid-template-columns: 1fr; }
+}
 
 /* DeepSeek balance */
 .q-balance { font-size: 24px; font-weight: 700; margin: 6px 0 4px; }
@@ -133,7 +141,7 @@ body {
       <span class="dt-date sans" id="dtDate">----年--月--日</span>
       <span class="dt-week sans" id="dtWeek">---</span>
     </div>
-    <div class="dt-battery sans" id="dtBattery">
+    <div class="dt-battery sans" id="dtBattery" style="display:none">
       <svg viewBox="-0.5 0 28 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="0" y="1" width="22" height="12" rx="2"/><rect x="22" y="4" width="3" height="6" rx="1"/><rect x="2" y="3" width="11" height="8" fill="currentColor" stroke="none" id="batFill"/></svg>
       <span id="batPct">--%</span>
     </div>
@@ -141,41 +149,23 @@ body {
 
   <div class="weather-card">
     <div class="w-row">
-      <span class="w-temp" id="weatherTemp">25°</span>
-      <span class="w-icon" id="weatherIcon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30"><path fill="currentColor" d="M3.89 17.6c0-.99.31-1.88.93-2.65s1.41-1.27 2.38-1.49c.26-1.17.85-2.14 1.78-2.88c.93-.75 2-1.12 3.22-1.12c1.18 0 2.24.36 3.16 1.09c.93.73 1.53 1.66 1.8 2.8h.27c1.18 0 2.18.41 3.01 1.24s1.25 1.83 1.25 3c0 1.18-.42 2.18-1.25 3.01s-1.83 1.25-3.01 1.25H8.16c-.58 0-1.13-.11-1.65-.34s-.99-.51-1.37-.89s-.68-.84-.91-1.36s-.34-1.09-.34-1.66m1.45 0c0 .76.28 1.42.82 1.96s1.21.82 1.99.82h9.28c.77 0 1.44-.27 1.99-.82s.83-1.2.83-1.96s-.27-1.42-.83-1.96c-.55-.54-1.21-.82-1.99-.82h-1.39q-.15 0-.15-.15l-.07-.49c-.1-.94-.5-1.73-1.19-2.35s-1.51-.93-2.45-.93s-1.76.31-2.46.94c-.7.62-1.09 1.41-1.18 2.34l-.07.42c0 .1-.05.15-.16.15l-.45.07c-.72.06-1.32.36-1.81.89c-.46.53-.71 1.16-.71 1.89m8.85-8.72c-.1.09-.08.16.07.21c.43.19.79.37 1.08.55c.11.03.19.02.22-.03c.61-.57 1.31-.86 2.12-.86s1.5.27 2.1.81c.59.54.92 1.21.99 2l.09.64h1.42c.65 0 1.21.23 1.68.7s.7 1.02.7 1.66c0 .6-.21 1.12-.62 1.57s-.92.7-1.53.77c-.1 0-.15.05-.15.16v1.13c0 .11.05.16.15.16c1.01-.06 1.86-.46 2.55-1.19s1.04-1.6 1.04-2.6c0-1.06-.37-1.96-1.12-2.7c-.75-.75-1.65-1.12-2.7-1.12h-.15c-.26-1-.81-1.82-1.65-2.47c-.83-.65-1.77-.97-2.8-.97c-1.4-.01-2.57.52-3.49 1.58"/></svg></span>
+      <span class="w-temp" id="weatherTemp">--°</span>
+      <span class="w-icon" id="weatherIcon"></span>
     </div>
-    <div class="w-detail sans" id="weatherDetail">体感 28° · 湿度 85%<br>风 4km/h · 北京</div>
+    <div class="w-detail sans" id="weatherDetail">天气未配置</div>
   </div>
 </div>
 
 <div class="data-alert" id="dataAlert"></div>
 
 <!-- ===== Quote ===== -->
-<div class="quote">
-  <div class="quote-text" id="quoteText">重要的东西，用眼睛是看不见的。</div>
-  <div class="quote-src sans" id="quoteSrc">— 圣·埃克苏佩里 ·《小王子》</div>
+<div class="quote" style="display:none">
+  <div class="quote-text" id="quoteText"></div>
+  <div class="quote-src sans" id="quoteSrc"></div>
 </div>
 
 <!-- ===== AI Quotas ===== -->
 <div class="quota-grid">
-  <!-- Claude -->
-  <div class="q-card" id="cardClaude">
-    <div class="q-head">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M0 0h32v32H0z" fill="none"/><path fill="currentColor" d="m7.5 20.61l5.5-3.08l.1-.27l-.1-.15h-.27l-.92-.06a234 234 0 0 1-8.51-.34l-.67-.14l-.62-.82l.06-.41l.56-.38l.8.07c3.08.2 6.15.4 9.21.72h.46l.06-.19l-.16-.1l-.12-.12l-2.74-1.86c-2.04-1.3-3.55-2.43-5.38-3.68l-.43-.54l-.18-1.18l.76-.84l1.03.07l.26.07c2.03 1.6 4.1 3.14 6.17 4.66l.43.36l.17-.12l.02-.09l-.2-.32c-1.43-2.6-2.55-4.62-4-6.96l-.2-.72c-.08-.3-.13-.55-.13-.85l.87-1.18l.49-.16l1.16.16l.49.42c1.4 3.31 2.76 5.93 4.23 8.83l.29.97l.1.3h.19v-.17c.65-3.42 0-6.57 1.22-9.53l.87-.57l.68.33l.56.8l-.08.51c-.37 2.62-.92 5.22-1.4 7.82h.24l.29-.29a69 69 0 0 1 4.91-5.94l.64-.5h1.2l.89 1.32l-.4 1.36a53.5 53.5 0 0 0-4.66 6.47l.09.13l.22-.02c2.4-.57 4.84-.99 7.27-1.4l.97.45l.1.46l-.37.94c-3 .72-6 1.34-9 2.05l-.05.04l.06.07c2.7.26 5.62.3 7.99.47l.92.61l.55.75l-.1.56l-1.4.73c-2.93-.7-5.19-1.22-7.91-1.9h-.22v.13c2.18 2.12 4.6 4.27 6.54 6.07l.15.68l-.38.53l-.4-.06c-2.04-1.43-3.9-3.09-5.8-4.7h-.15v.2l.52.76c1.14 1.79 2.64 3.25 2.87 5.37l-.2.41l-.7.25l-.78-.14a73 73 0 0 1-4.58-7.04l-.17.09l-.78 8.46l-.37.43l-.85.33l-.71-.54l-.38-.87a114 114 0 0 0 1.53-7.97l.2-.73l-.01-.05l-.16.02a77 77 0 0 1-6.23 7.88l-.48.2l-.84-.44l.08-.77l.47-.69c2.07-2.57 3.54-4.66 5.54-7v-.19h-.07l-7.4 4.8l-1.31.17l-.57-.53l.07-.87l.27-.28l2.23-1.53z"/></svg>
-      <span class="q-name sans">Claude</span>
-    </div>
-    <div class="q-row">
-      <div class="q-label sans"><span>5H QUOTA</span><span class="q-pct mono">38%</span></div>
-      <div class="q-bar"><div class="q-bar-fill" style="width:38%"></div></div>
-      <div class="q-refresh sans">↻ 2h07m</div>
-    </div>
-    <div class="q-row">
-      <div class="q-label sans"><span>WEEKLY</span><span class="q-pct mono">62%</span></div>
-      <div class="q-bar"><div class="q-bar-fill" style="width:62%"></div></div>
-      <div class="q-refresh sans">↻ Mon</div>
-    </div>
-  </div>
-
   <!-- GPT / Codex -->
   <div class="q-card" id="cardCodex">
     <div class="q-head">
@@ -183,37 +173,36 @@ body {
       <span class="q-name sans">Codex</span>
     </div>
     <div class="q-row">
-      <div class="q-label sans"><span>5H QUOTA</span><span class="q-pct mono">15%</span></div>
-      <div class="q-bar"><div class="q-bar-fill" style="width:15%"></div></div>
-      <div class="q-refresh sans">↻ 0h52m</div>
+      <div class="q-label sans"><span>5H QUOTA</span><span class="q-pct mono">--</span></div>
+      <div class="q-bar"><div class="q-bar-fill" style="width:0%"></div></div>
+      <div class="q-refresh sans">等待采集</div>
     </div>
     <div class="q-row">
-      <div class="q-label sans"><span>WEEKLY</span><span class="q-pct mono">45%</span></div>
-      <div class="q-bar"><div class="q-bar-fill" style="width:45%"></div></div>
-      <div class="q-refresh sans">↻ Mon</div>
+      <div class="q-label sans"><span>WEEKLY</span><span class="q-pct mono">--</span></div>
+      <div class="q-bar"><div class="q-bar-fill" style="width:0%"></div></div>
+      <div class="q-refresh sans">等待采集</div>
     </div>
   </div>
 
-  <!-- Kimi -->
-  <div class="q-card" id="cardKimi">
+  <!-- GLM Coding Plan -->
+  <div class="q-card" id="cardGlm">
     <div class="q-head">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M21.765.351C22.998.351 24 1.353 24 2.586S22.998 4.82 21.765 4.82h-1.974c-.15 0-.26-.12-.26-.26V2.586A2.237 2.237 0 0 1 21.765.35M9.41 13.388l8.447-8.377c.16-.16.07-.471-.14-.471h-4.55s-.1.02-.14.06l-9.099 9.029c-.14.14-.35.02-.35-.21V4.81c0-.15-.1-.27-.221-.27H.22c-.12 0-.22.12-.22.27v18.57c0 .15.1.27.22.27h3.137c.12 0 .22-.12.22-.27v-3.79c0-.08.03-.16.08-.21l2.826-2.796c.07-.07.16-.08.241-.03l7.546 5.551a8.9 8.9 0 0 0 4.018 1.493c.12.01.23-.11.23-.27V19.76c0-.14-.08-.25-.19-.26a5.8 5.8 0 0 1-2.355-.942l-6.533-4.73c-.14-.09-.15-.32-.03-.441"/></svg>
-      <span class="q-name sans">Kimi</span>
+      <span class="q-name sans">GLM Coding Plan</span>
     </div>
     <div class="q-row">
-      <div class="q-label sans"><span>5H QUOTA</span><span class="q-pct mono">72%</span></div>
-      <div class="q-bar"><div class="q-bar-fill" style="width:72%"></div></div>
-      <div class="q-refresh sans">↻ 3h41m</div>
+      <div class="q-label sans"><span>5H QUOTA</span><span class="q-pct mono">--</span></div>
+      <div class="q-bar"><div class="q-bar-fill" style="width:0%"></div></div>
+      <div class="q-refresh sans">等待采集</div>
     </div>
     <div class="q-row">
-      <div class="q-label sans"><span>WEEKLY</span><span class="q-pct mono">55%</span></div>
-      <div class="q-bar"><div class="q-bar-fill" style="width:55%"></div></div>
-      <div class="q-refresh sans">↻ Mon</div>
+      <div class="q-label sans"><span>WEEKLY</span><span class="q-pct mono">--</span></div>
+      <div class="q-bar"><div class="q-bar-fill" style="width:0%"></div></div>
+      <div class="q-refresh sans">等待采集</div>
     </div>
     <div class="q-row">
-      <div class="q-label sans"><span>MONTHLY</span><span class="q-pct mono">88%</span></div>
-      <div class="q-bar"><div class="q-bar-fill" style="width:88%"></div></div>
-      <div class="q-refresh sans">↻ 28d</div>
+      <div class="q-label sans"><span>MONTHLY</span><span class="q-pct mono">--</span></div>
+      <div class="q-bar"><div class="q-bar-fill" style="width:0%"></div></div>
+      <div class="q-refresh sans">等待采集</div>
     </div>
   </div>
 
@@ -223,7 +212,7 @@ body {
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M23.75 4.927c-.245-.12-.34.108-.482.224c-.049.038-.09.087-.131.13c-.357.384-.773.634-1.315.604c-.796-.044-1.474.207-2.074.818c-.127-.754-.551-1.203-1.195-1.492c-.338-.15-.68-.3-.915-.626c-.165-.231-.21-.49-.293-.744c-.052-.153-.105-.31-.28-.337c-.192-.03-.266.13-.341.265c-.3.55-.416 1.158-.406 1.772c.027 1.382.608 2.482 1.762 3.266c.132.09.166.18.124.311c-.079.27-.172.531-.255.8c-.052.173-.13.211-.314.135A5.3 5.3 0 0 1 15.97 8.92c-.82-.797-1.563-1.677-2.489-2.366a11 11 0 0 0-.66-.454c-.944-.922.125-1.679.372-1.768c.259-.093.09-.416-.747-.412c-.835.004-1.6.285-2.574.659c-.143.057-.326.153-.446.13a9.2 9.2 0 0 0-2.763-.096c-1.806.203-3.25 1.06-4.31 2.525c-1.275 1.76-1.574 3.759-1.207 5.846c.385 2.197 1.502 4.019 3.22 5.442c1.78 1.474 3.83 2.197 6.169 2.058c1.42-.081 3.003-.273 4.786-1.789c.45.224.922.313 1.707.381c.603.057 1.184-.03 1.634-.123c.704-.15.655-.804.4-.926c-2.065-.966-1.612-.573-2.024-.89c1.05-1.248 2.632-2.544 3.25-6.741c.049-.334.007-.543 0-.814c-.003-.163.034-.228.22-.247a4 4 0 0 0 1.482-.457c1.338-.734 1.867-1.939 1.995-3.385c.019-.22-.004-.45-.236-.565"/></svg>
       <span class="q-name sans">DeepSeek</span>
     </div>
-    <div class="q-balance mono"><span id="deepSeekBalance">¥ --</span> <span class="q-balance-unit sans">API Balance</span></div>
+    <div class="q-balance mono"><span id="deepSeekBalance">¥ --</span> <span class="q-balance-unit sans">API 余额</span></div>
     <div class="q-balance-sub sans" id="deepSeekDetail">等待实时数据</div>
   </div>
 </div>
@@ -236,6 +225,6 @@ body {
 
 <script src="data.js"></script>
 <script src="live-endpoint.js"></script>
-<script src="dashboard-runtime.js?v=20260720"></script>
+<script src="dashboard-runtime.js?v=20260908"></script>
 </body>
 </html>
