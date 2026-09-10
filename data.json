@@ -1,25 +1,25 @@
 {
   "mode": "live",
-  "updatedAt": "2026-09-09T01:33:42.348+08:00",
+  "updatedAt": "2026-09-10T14:19:38.535+08:00",
   "weather": {
-    "ok": false,
-    "description": null,
-    "iconKey": null,
-    "tempC": null,
-    "feelsLikeC": null,
-    "humidity": null,
-    "windKph": null,
-    "windDir": null,
-    "place": null,
-    "observedAt": null,
-    "fetchedAt": "2026-09-09T01:33:42.349+08:00"
+    "ok": true,
+    "description": "晴",
+    "iconKey": "clear",
+    "tempC": 28,
+    "feelsLikeC": 25.9,
+    "humidity": 21,
+    "windKph": 8.8,
+    "windDir": "北风",
+    "place": "北京市海淀区",
+    "observedAt": "2026-09-10T14:15:00.000+08:00",
+    "fetchedAt": "2026-09-10T14:19:31.819+08:00"
   },
   "quote": null,
   "sources": {
     "claude": {
       "ok": false,
       "label": "Claude",
-      "fetchedAt": "2026-09-09T01:33:39.216+08:00",
+      "fetchedAt": "2026-09-10T14:19:31.715+08:00",
       "stale": false,
       "disabled": true,
       "needsSetup": false,
@@ -29,7 +29,7 @@
     "codex": {
       "ok": true,
       "label": "Codex",
-      "fetchedAt": "2026-09-09T01:33:39.216+08:00",
+      "fetchedAt": "2026-09-10T14:19:31.716+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
@@ -37,15 +37,15 @@
       "windows": [
         {
           "name": "周",
-          "usedPct": 18,
-          "resetAt": "2026-09-15T11:32:14.000+08:00"
+          "usedPct": 42,
+          "resetAt": "2026-09-15T11:32:15.000+08:00"
         }
       ]
     },
     "kimi": {
       "ok": false,
       "label": "Kimi",
-      "fetchedAt": "2026-09-09T01:33:39.261+08:00",
+      "fetchedAt": "2026-09-10T14:19:31.768+08:00",
       "stale": false,
       "disabled": true,
       "needsSetup": false,
@@ -55,7 +55,7 @@
     "deepseek": {
       "ok": true,
       "label": "DeepSeek",
-      "fetchedAt": "2026-09-09T01:33:39.262+08:00",
+      "fetchedAt": "2026-09-10T14:19:31.768+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
@@ -66,7 +66,7 @@
     "glm": {
       "ok": true,
       "label": "GLM",
-      "fetchedAt": "2026-09-09T01:33:39.318+08:00",
+      "fetchedAt": "2026-09-10T14:19:31.818+08:00",
       "stale": false,
       "disabled": false,
       "needsSetup": false,
@@ -79,8 +79,8 @@
         },
         {
           "name": "5小时",
-          "usedPct": 26,
-          "resetAt": "2026-09-09T02:51:03.704+08:00"
+          "usedPct": 2,
+          "resetAt": "2026-09-10T19:10:36.531+08:00"
         }
       ]
     }
